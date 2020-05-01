@@ -12,6 +12,8 @@ app.use(cors());
 var port = 9000;
 app.listen(port, () => console.log(`Listening on port ${port}...`));
 
+const AttributeEnum = Object.freeze({ value: 1, href: 2 });
+
 app.get("/titleList/:t", async (req, res) => {
   console.log("new request titleList for title: " + req.params.t);
 
@@ -43,33 +45,80 @@ app.get("/titleList/:t", async (req, res) => {
 });
 
 app.get("/seriesInfo/:id", async (req, res) => {
-  console.log("new request! idImdb: " + req.params.id);
+  console.log("new request seriesInfo! idImdb: ", req.params.id);
+
+  const url = `https://www.imdb.com/title/${req.params.id}`;
+
+  console.log("Require HTML for the url: ", url);
+  let html = await getHtmlFromUrl(url);
+  console.log("(3) Html received");
+
+  //var attrFilterGenres = "#titleStoryLine > .see-more.inline.canwrap > a";
+  var attrFilterGenres = ".subtext";
+  var aaa = await getFilteredHtml(
+    html,
+    attrFilterGenres,
+    AttributeEnum.value,
+    "",
+    false
+  );
+  console.log("genres", aaa);
+
+  var attrFilterPlot = ".summary_text";
+  var bbb = await getFilteredHtml(
+    html,
+    attrFilterPlot,
+    AttributeEnum.value,
+    "",
+    true
+  );
+  console.log("plot", bbb);
+
+  var attrFilterRate = "*[itemprop = 'ratingValue']";
+  var ccc = await getFilteredHtml(
+    html,
+    attrFilterRate,
+    AttributeEnum.value,
+    "",
+    false
+  );
+  console.log("rate", ccc);
+
+  var attrFilterRateCount = "*[itemprop = 'ratingCount']";
+  var ddd = await getFilteredHtml(
+    html,
+    attrFilterRateCount,
+    AttributeEnum.value,
+    "",
+    false
+  );
+  console.log("rateCount", ddd);
+});
+
+app.get("/episodesList/:id", async (req, res) => {
+  console.log("new request episodesList! idImdb: " + req.params.id);
 
   var d = new Date();
 
   const url = `https://www.imdb.com/title/${
     req.params.id
-  }/episodes/_ajax?year=${d.getFullYear()}`; //`https://www.imdb.com/title/${req.params.id}/`;
+  }/episodes/_ajax?year=${d.getFullYear()}`;
   console.log("Require HTML for the url: " + url);
 
   let html = await getHtmlFromUrl(url);
   console.log("(3) Html received");
 
   var attrFilterYear = "#byYear > option";
-  var years = await getFilteredHtml(html, attrFilterYear); //getNumberOfYearsTmp(html); //await getNumberOfYears(html);
-
-  var attrFilterSeason = "#bySeason > option";
-  var seasons = await getFilteredHtml(html, attrFilterSeason); //await getNumberOfSeasons(html);
+  var years = await getFilteredHtml(
+    html,
+    attrFilterYear,
+    AttributeEnum.value,
+    "",
+    false
+  );
 
   var listRes = [];
   listRes = await getEpisodesList(req.params.id, years);
-
-  //OLD
-  /*
-  for (let i = 0; i < years.length; i++) {
-    var episodesYear = await getSeasonInfoByYear(req.params.id, years[i]);
-    listRes = listRes.concat(episodesYear);
-  }*/
 
   res.send(listRes);
 });
@@ -100,18 +149,55 @@ async function callHttpMethod(url) {
   });
 }
 
-async function getFilteredHtml(html, attrFilter) {
-  years = [];
+async function getFilteredHtml(
+  html,
+  attrFilter,
+  attribute,
+  filterValue,
+  searchChilds
+) {
+  var results = [];
 
   var childNodes = ch(attrFilter, html);
   for (let i = 0; i < childNodes.length; i++) {
-    childAttr = childNodes[i].attribs.value;
-    years.push(childAttr);
+    var childAttr = "";
+
+    switch (attribute) {
+      case AttributeEnum.value:
+        childAttr = searchChilds
+          ? getValueFirstChild(childNodes[i])
+          : childNodes[i].attribs.value; //childNodes[i].childNodes[0].nodeValue.trim(); //.attribs.value;
+        break;
+      case AttributeEnum.href:
+        childAttr = childNodes[i].attribs.href;
+        break;
+    }
+
+    if (!filterValue || filterValue == "" || childAttr.includes(filterValue)) {
+      results.push(childAttr);
+    }
   }
 
-  console.log("Res:" + years);
+  console.log("Res:" + results);
 
-  return years;
+  return results;
+}
+
+function getValueFirstChild(parent) {
+  if (!parent.nodeValue || parent.nodeValue.trim() == "") {
+    if (parent.childNodes) {
+      for (var i = 0; i < parent.childNodes.length; i++) {
+        var res = getValueFirstChild(parent.childNodes[i]);
+        if (res && res.trim() != "") {
+          return res;
+        }
+      }
+    } else {
+      return "";
+    }
+  } else {
+    return parent.nodeValue.trim();
+  }
 }
 
 async function getSeasonInfoByYear(title, year) {
