@@ -1,15 +1,11 @@
 class SeriesInfo {
-  constructor(idImdb, title, years, imageLink) {
+  constructor(idImdb, genres, plot, rate, rateCount) {
     this.idImdb = idImdb;
-    this.title = title;
-    this.years = years;
-    this.imageLink = imageLink;
+    this.genres = genres;
+    this.plot = plot;
+    this.rate = rate;
+    this.rateCount = rateCount;
   }
 }
-
-SeriesInfo.prototype.toString = function serieToString() {
-  var ret = `Id: ${this.idImdb}, ${this.title} (${this.years}) '${this.imageLink}'`;
-  return ret;
-};
 
 module.exports = SeriesInfo;

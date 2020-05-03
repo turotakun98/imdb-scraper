@@ -2,6 +2,7 @@ const request = require("request");
 const rp = require("request-promise");
 const ch = require("cheerio");
 const EpisodeInfo = require("./episodeInfo");
+const TitleInfo = require("./titleInfo");
 const SeriesInfo = require("./seriesInfo");
 const cors = require("cors");
 const express = require("express");
@@ -11,8 +12,6 @@ app.use(express.json());
 app.use(cors());
 var port = 9000;
 app.listen(port, () => console.log(`Listening on port ${port}...`));
-
-const AttributeEnum = Object.freeze({ value: 1, href: 2 });
 
 app.get("/titleList/:t", async (req, res) => {
   console.log("new request titleList for title: " + req.params.t);
@@ -33,7 +32,7 @@ app.get("/titleList/:t", async (req, res) => {
         var image = null;
         if (el["i"]) image = el["i"][0];
 
-        var series = new SeriesInfo(el["id"], el["l"], el["yr"], image);
+        var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
         seriesResponse.push(series);
       }
     });
@@ -53,46 +52,31 @@ app.get("/seriesInfo/:id", async (req, res) => {
   let html = await getHtmlFromUrl(url);
   console.log("(3) Html received");
 
-  //var attrFilterGenres = "#titleStoryLine > .see-more.inline.canwrap > a";
-  var attrFilterGenres = ".subtext";
-  var aaa = await getFilteredHtml(
-    html,
-    attrFilterGenres,
-    AttributeEnum.value,
-    "",
-    false
-  );
-  console.log("genres", aaa);
+  var attrGenres = ".see-more.inline.canwrap";
+  var genres = await getFilteredHtml(html, attrGenres, true, "a", 1);
+  console.log("genres", genres);
 
-  var attrFilterPlot = ".summary_text";
-  var bbb = await getFilteredHtml(
-    html,
-    attrFilterPlot,
-    AttributeEnum.value,
-    "",
-    true
-  );
-  console.log("plot", bbb);
+  var attrPlot = ".summary_text";
+  var plot = await getFilteredHtml(html, attrPlot, true, null, 0);
+  console.log("plot", plot);
 
-  var attrFilterRate = "*[itemprop = 'ratingValue']";
-  var ccc = await getFilteredHtml(
-    html,
-    attrFilterRate,
-    AttributeEnum.value,
-    "",
-    false
-  );
-  console.log("rate", ccc);
+  var attrRate = "*[itemprop = 'ratingValue']";
+  var rate = await getFilteredHtml(html, attrRate, true, null, 0);
+  console.log("rate", rate);
 
-  var attrFilterRateCount = "*[itemprop = 'ratingCount']";
-  var ddd = await getFilteredHtml(
-    html,
-    attrFilterRateCount,
-    AttributeEnum.value,
-    "",
-    false
+  var attrRateCount = "*[itemprop = 'ratingCount']";
+  var rateCount = await getFilteredHtml(html, attrRateCount, true, null, 0);
+  console.log("rateCount", rateCount);
+
+  var seriesInfo = new SeriesInfo(
+    req.params.id,
+    genres,
+    plot[0],
+    rate[0],
+    rateCount[0]
   );
-  console.log("rateCount", ddd);
+
+  res.send(seriesInfo);
 });
 
 app.get("/episodesList/:id", async (req, res) => {
@@ -109,13 +93,7 @@ app.get("/episodesList/:id", async (req, res) => {
   console.log("(3) Html received");
 
   var attrFilterYear = "#byYear > option";
-  var years = await getFilteredHtml(
-    html,
-    attrFilterYear,
-    AttributeEnum.value,
-    "",
-    false
-  );
+  var years = await getFilteredHtml(html, attrFilterYear, false, null, 0);
 
   var listRes = [];
   listRes = await getEpisodesList(req.params.id, years);
@@ -151,31 +129,22 @@ async function callHttpMethod(url) {
 
 async function getFilteredHtml(
   html,
-  attrFilter,
-  attribute,
-  filterValue,
-  searchChilds
+  filterAttributes,
+  searchChilds,
+  attributeChildsType,
+  startAttributeIndex
 ) {
   var results = [];
 
-  var childNodes = ch(attrFilter, html);
-  for (let i = 0; i < childNodes.length; i++) {
-    var childAttr = "";
+  var childNodes = ch(filterAttributes, html);
+  for (let i = startAttributeIndex; i < childNodes.length; i++) {
+    var childAttr = [];
 
-    switch (attribute) {
-      case AttributeEnum.value:
-        childAttr = searchChilds
-          ? getValueFirstChild(childNodes[i])
-          : childNodes[i].attribs.value; //childNodes[i].childNodes[0].nodeValue.trim(); //.attribs.value;
-        break;
-      case AttributeEnum.href:
-        childAttr = childNodes[i].attribs.href;
-        break;
-    }
+    childAttr = searchChilds
+      ? getValueChildrens(childNodes[i], attributeChildsType)
+      : [childNodes[i].attribs.value];
 
-    if (!filterValue || filterValue == "" || childAttr.includes(filterValue)) {
-      results.push(childAttr);
-    }
+    results = results.concat(childAttr);
   }
 
   console.log("Res:" + results);
@@ -183,20 +152,29 @@ async function getFilteredHtml(
   return results;
 }
 
-function getValueFirstChild(parent) {
+function getValueChildrens(parent, filter) {
   if (!parent.nodeValue || parent.nodeValue.trim() == "") {
     if (parent.childNodes) {
+      var res = [];
       for (var i = 0; i < parent.childNodes.length; i++) {
-        var res = getValueFirstChild(parent.childNodes[i]);
-        if (res && res.trim() != "") {
-          return res;
+        var resTmp = [];
+        if (filter && filter == parent.childNodes[i].tagName) {
+          resTmp = getValueChildrens(parent.childNodes[i].firstChild, filter);
+        }
+        if (!filter) {
+          resTmp = getValueChildrens(parent.childNodes[i], null);
+        }
+
+        if (resTmp.length > 0) {
+          res = res.concat(resTmp);
         }
       }
+      return res;
     } else {
-      return "";
+      return [""];
     }
   } else {
-    return parent.nodeValue.trim();
+    return [parent.nodeValue.trim()];
   }
 }
 
@@ -211,9 +189,6 @@ async function getSeasonInfoByYear(title, year) {
 
     $(".list_item").each((i, el) => {
       var title = $(el).find(".image > a").attr("title");
-      if (title == "undefined") {
-        console.log("here1");
-      }
       var link = $(el).find(".image > a").attr("href");
       var epNumber = $(el).find(".image > a > div > div").text();
       if (!epNumber) {
@@ -226,9 +201,15 @@ async function getSeasonInfoByYear(title, year) {
       var year = dateRaw.getFullYear();
 
       var rating = $(el).find(".ipl-rating-star__rating").first().text();
-      var episode = new EpisodeInfo(title, link, epNumber, year, rating);
-      episodesList.push(episode);
-      console.log(episode.toString());
+      try {
+        var episode = new EpisodeInfo(title, link, epNumber, year, rating);
+        episodesList.push(episode);
+        console.log(episode.toString());
+      } catch (e) {
+        console.log(
+          `Error trying to save Episode (${title}, ${link}, ${epNumber}, ${year}, ${rating})`
+        );
+      }
     });
   } catch (e) {
     console.log("Error in function 'getSeasonInfoByYear': " + e);
