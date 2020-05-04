@@ -18,26 +18,31 @@ app.get("/titleList/:t", async (req, res) => {
 
   if (req.params.t) {
     var seriesResponse = [];
+    var titleToSearch = req.params.t.toLowerCase();
 
-    var url = `https://sg.media-imdb.com/suggests/${req.params.t[0]}/${req.params.t}.json`;
+    var url = `https://sg.media-imdb.com/suggests/${titleToSearch[0]}/${titleToSearch}.json`;
     var callResp = await callHttpMethod(url);
 
     var respBody = callResp.body;
-    var replHead = "imdb$" + req.params.t + "(";
+    var replHead = "imdb$" + titleToSearch + "(";
     respBody = respBody.replace(replHead, "");
     respBody = respBody.substring(0, respBody.length - 1);
-    var respJson = JSON.parse(respBody).d;
-    respJson.forEach((el) => {
-      if (el["q"] == "TV series") {
-        var image = null;
-        if (el["i"]) image = el["i"][0];
+    var respJson = JSON.parse(respBody);
+    if (respJson.hasOwnProperty("d")) {
+      var data = respJson.d;
+      data.forEach((el) => {
+        if (el["q"] == "TV series") {
+          var image = null;
+          if (el["i"]) image = el["i"][0];
 
-        var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
-        seriesResponse.push(series);
-      }
-    });
-
-    res.send(seriesResponse);
+          var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
+          seriesResponse.push(series);
+          res.send(seriesResponse);
+        }
+      });
+    } else {
+      res.send("no property d found in json");
+    }
   } else {
     res.send("Invalid field t (Title)");
   }
