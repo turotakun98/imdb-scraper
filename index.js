@@ -195,14 +195,27 @@ async function getSeasonInfoByYear(title, year) {
         epNumber = $(el).find(".image > div > div").text();
       }
       var airdate = $(el).find(".info > .airdate").text();
-
       var dateRaw = Date.parse(airdate);
       dateRaw = new Date(dateRaw);
       var year = dateRaw.getFullYear();
 
+      var images = $(el).find(".hover-over-image > img");
+      var imageLink = "";
+      if (images.length > 0) {
+        imageLink = images[0].attribs.src;
+      }
+
       var rating = $(el).find(".ipl-rating-star__rating").first().text();
+
       try {
-        var episode = new EpisodeInfo(title, link, epNumber, year, rating);
+        var episode = new EpisodeInfo(
+          title,
+          link,
+          imageLink,
+          epNumber,
+          year,
+          rating
+        );
         episodesList.push(episode);
         console.log(episode.toString());
       } catch (e) {

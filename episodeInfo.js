@@ -1,7 +1,9 @@
 class EpisodeInfo {
-  constructor(title, link, numberAndSeason, year, rating) {
+  baseLink = "https://www.imdb.com";
+  constructor(title, link, imageLink, numberAndSeason, year, rating) {
     this.title = title;
-    this.link = link;
+    this.link = this.baseLink + link;
+    this.imageLink = imageLink;
     this.rating = rating;
     this.year = year;
     this.setNumberSeason = numberAndSeason;
