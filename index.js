@@ -37,9 +37,9 @@ app.get("/titleList/:t", async (req, res) => {
 
           var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
           seriesResponse.push(series);
-          res.send(seriesResponse);
         }
       });
+      res.send(seriesResponse);
     } else {
       res.send("no property d found in json");
     }
