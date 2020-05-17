@@ -210,6 +210,12 @@ async function getSeasonInfoByYear(title, year) {
         imageLink = images[0].attribs.src;
       }
 
+      var ratingCountRaw = $(el)
+        .find(".ipl-rating-star__total-votes")
+        .first()
+        .text()
+        .trim();
+      var ratingCount = ratingCountRaw.substring(1, ratingCountRaw.length - 1);
       var rating = $(el).find(".ipl-rating-star__rating").first().text();
 
       try {
@@ -219,7 +225,8 @@ async function getSeasonInfoByYear(title, year) {
           imageLink,
           epNumber,
           year,
-          rating
+          rating,
+          ratingCount
         );
         episodesList.push(episode);
         console.log(episode.toString());
