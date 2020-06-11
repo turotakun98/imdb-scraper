@@ -23,27 +23,34 @@ app.get("/titleList/:t", async (req, res) => {
     var url = `https://sg.media-imdb.com/suggests/${titleToSearch[0]}/${titleToSearch}.json`;
     var callResp = await callHttpMethod(url);
 
-    var respBody = callResp.body;
-    var replHead = "imdb$" + titleToSearch + "(";
-    respBody = respBody.replace(replHead, "");
-    respBody = respBody.substring(0, respBody.length - 1);
-    var respJson = JSON.parse(respBody);
-    if (respJson.hasOwnProperty("d")) {
-      var data = respJson.d;
-      data.forEach((el) => {
-        if (el["q"] == "TV series") {
-          var image = null;
-          if (el["i"]) image = el["i"][0];
+    if (callResp.statusCode == 200) {
+      var respBody = callResp.body;
+      var replHead = "imdb$" + titleToSearch + "(";
+      respBody = respBody.replace(replHead, "");
+      respBody = respBody.substring(0, respBody.length - 1);
+      var respJson = JSON.parse(respBody);
+      if (respJson.hasOwnProperty("d")) {
+        var data = respJson.d;
+        data.forEach((el) => {
+          if (el["q"] == "TV series") {
+            var image = null;
+            if (el["i"]) image = el["i"][0];
 
-          var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
-          seriesResponse.push(series);
-        }
-      });
-      res.send(seriesResponse);
+            var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
+            seriesResponse.push(series);
+          }
+        });
+        res.send(seriesResponse);
+      } else {
+        console.log("no property d found in json");
+        res.send("no property d found in json");
+      }
     } else {
-      res.send("no property d found in json");
+      console.log("generic error status code");
+      res.send("generic error status code");
     }
   } else {
+    console.log("Invalid field t (Title)");
     res.send("Invalid field t (Title)");
   }
 });
