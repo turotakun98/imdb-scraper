@@ -1,19 +1,42 @@
 const request = require("request");
 const rp = require("request-promise");
 const ch = require("cheerio");
+
 const EpisodeInfo = require("./episodeInfo");
 const TitleInfo = require("./titleInfo");
 const SeriesInfo = require("./seriesInfo");
+
 const cors = require("cors");
 const express = require("express");
 const app = express();
+const config = require("./config");
+const winston = require("winston");
+require("winston-daily-rotate-file");
 
+// WINSTON -- LOG MANAGEMENT
+var transport = new winston.transports.DailyRotateFile({
+  filename: `${config.applicationName}-%DATE%.log`,
+  datePattern: config.datePattern,
+  zippedArchive: config.zipOldLogs,
+  maxSize: config.maxSize,
+  maxFiles: config.maxFiles,
+});
+
+const logger = winston.createLogger({
+  level: config.minLogLevel,
+  transports: [transport],
+});
+const consolea = new winston.transports.Console();
+logger.add(consolea);
+
+// EXPRESS -- WEB FRAMEWORK
 app.use(express.json());
 app.use(cors());
-var port = 9000;
-app.listen(port, () => console.log(`Listening on port ${port}...`));
+var port = config.port;
+app.listen(port, () => logger.log("info", `Listening on port ${port}...`));
 
 app.get("/titleList/:t", async (req, res) => {
+  logger.log("info", req.params.t);
   console.log("new request titleList for title: " + req.params.t);
 
   if (req.params.t) {
