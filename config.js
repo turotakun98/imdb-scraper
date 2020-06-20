@@ -1,11 +1,9 @@
 module.exports = {
-  // WINSTON settings (log management)
+  // LOG
   applicationName: "imdb-scraper",
-  datePattern: "YYYY-MM-DD",
-  zipOldLogs: true,
-  maxSize: "20m",
-  maxFiles: "14d",
   minLogLevel: "debug",
+  logInConsole: true,
+  logPath: "./",
   // EXPRESS
   port: 9000,
 };
