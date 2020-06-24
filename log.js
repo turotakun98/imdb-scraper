@@ -1,46 +1,69 @@
 const fs = require("fs");
 
-function Log(path, applicationName, minLogLevel, logInConsole) {
-  this.path = path;
-  this.applicationName = applicationName;
-  this.minLogLevel = LogLevels[minLogLevel];
-  this.logInConsole = logInConsole;
+var Log = (function () {
+  var instance;
 
-  getDateTime = function () {
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, "0");
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const yyyy = today.getFullYear();
-    const h = String(today.getHours()).padStart(2, "0");
-    const m = String(today.getMinutes()).padStart(2, "0");
-    const s = String(today.getSeconds()).padStart(2, "0");
-    const ms = String(today.getMilliseconds()).padStart(3, "0");
-    const date = `${yyyy}${mm}${dd}`;
-    const time = `${h}:${m}:${s}.${ms}`;
-    return { date, time };
-  };
+  function init(path, applicationName, minLogLevel, logInConsole) {
+    var path = path;
+    var applicationName = applicationName;
+    var minLogLevel = LogLevels[minLogLevel];
+    var logInConsole = logInConsole;
 
-  LogMessage = (message, logLevel, functionName, fileName) => {
-    if (logLevel.value > this.minLogLevel.value) {
-      const { date, time } = getDateTime();
-      const logMessage = `${time}; ${logLevel.description}; ${message}; ${functionName}; ${fileName};`;
-      const filePathName = `${this.applicationName}-${date}.log`;
-
-      fs.appendFile(
-        this.path + filePathName,
-        logMessage + " \r\n",
-        "utf-8",
-        function (err) {
-          if (err) throw err;
-        }
-      );
-
-      this.logInConsole && console.log(logMessage);
+    function getDateTime() {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      const h = String(today.getHours()).padStart(2, "0");
+      const m = String(today.getMinutes()).padStart(2, "0");
+      const s = String(today.getSeconds()).padStart(2, "0");
+      const ms = String(today.getMilliseconds()).padStart(3, "0");
+      const date = `${yyyy}${mm}${dd}`;
+      const time = `${h}:${m}:${s}.${ms}`;
+      return { date, time };
     }
-  };
 
-  return Object.freeze({ LogMessage });
-}
+    function LogMessage(
+      message,
+      logLevel = minLogLevel,
+      functionName = "",
+      fileName = ""
+    ) {
+      if (logLevel.value >= minLogLevel.value) {
+        const { date, time } = getDateTime();
+        const logMessage = `${time}; ${logLevel.description}; ${message}; ${functionName}; ${fileName};`;
+        const filePathName = `${applicationName}-${date}.log`;
+
+        fs.appendFile(
+          path + filePathName,
+          logMessage + " \r\n",
+          "utf-8",
+          function (err) {
+            if (err) throw err;
+          }
+        );
+
+        logInConsole && console.log(logMessage);
+      }
+    }
+
+    return { LogMessage };
+  }
+
+  return {
+    createLogger: function ({
+      path = "./",
+      applicationName = "defaultAppName",
+      minLogLevel = LogLevels.info,
+      logInConsole = true,
+    } = {}) {
+      if (!instance) {
+        instance = init(path, applicationName, minLogLevel, logInConsole);
+      }
+      return instance;
+    },
+  };
+})();
 
 var LogLevels = Object.freeze({
   debug: { value: 1, description: "DEBUG" },
