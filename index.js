@@ -19,8 +19,7 @@ const logger = Log.createLogger({
     minLogLevel: config.minLogLevel,
     logInConsole: config.logInConsole,
 });
-Scraper.setLogger(logger);
-
+const scraper = new Scraper(logger);
 logger.LogMessage("Appplication start", LogLevels.info, "main", "index.js");
 
 // EXPRESS -- WEB FRAMEWORK
@@ -77,23 +76,23 @@ app.get("/seriesInfo/:id", async (req, res) => {
     const url = `https://www.imdb.com/title/${req.params.id}`;
 
     logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "seriesInfo", "index.js");
-    let html = await Scraper.getHtmlFromUrl(url);
+    let html = await scraper.getHtmlFromUrl(url);
     logger.LogMessage("(3) Html received", LogLevels.info, "seriesInfo", "index.js");
 
     var attrGenres = ".see-more.inline.canwrap";
-    var genres = await Scraper.getFilteredHtml(html, attrGenres, true, "a", 1);
+    var genres = await scraper.getFilteredHtml(html, attrGenres, true, "a", 1);
     logger.LogMessage(`genres: [${genres}]`, LogLevels.info, "seriesInfo", "index.js");
 
     var attrPlot = ".summary_text";
-    var plot = await Scraper.getFilteredHtml(html, attrPlot, true, null, 0);
+    var plot = await scraper.getFilteredHtml(html, attrPlot, true, null, 0);
     logger.LogMessage(`plot: [${plot}]`, LogLevels.info, "seriesInfo", "index.js");
 
     var attrRate = "*[itemprop = 'ratingValue']";
-    var rate = await Scraper.getFilteredHtml(html, attrRate, true, null, 0);
+    var rate = await scraper.getFilteredHtml(html, attrRate, true, null, 0);
     logger.LogMessage(`rate: [${rate}]"`, LogLevels.info, "seriesInfo", "index.js");
 
     var attrRateCount = "*[itemprop = 'ratingCount']";
-    var rateCount = await Scraper.getFilteredHtml(html, attrRateCount, true, null, 0);
+    var rateCount = await scraper.getFilteredHtml(html, attrRateCount, true, null, 0);
     logger.LogMessage(`rateCount: [${rateCount}]`, LogLevels.info, "seriesInfo", "index.js");
 
     var seriesInfo = new SeriesInfo(req.params.id, genres, plot[0], rate[0], rateCount[0]);
@@ -109,11 +108,11 @@ app.get("/episodesList/:id", async (req, res) => {
     const url = `https://www.imdb.com/title/${req.params.id}/episodes/_ajax?year=${d.getFullYear()}`;
     logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "episodesList", "index.js");
 
-    let html = await Scraper.getHtmlFromUrl(url);
+    let html = await scraper.getHtmlFromUrl(url);
     logger.LogMessage("(3) Html received", LogLevels.info, "episodesList", "index.js");
 
     var attrFilterYear = "#byYear > option";
-    var years = await Scraper.getFilteredHtml(html, attrFilterYear, false, null, 0);
+    var years = await scraper.getFilteredHtml(html, attrFilterYear, false, null, 0);
 
     var listRes = [];
     listRes = await getEpisodesList(req.params.id, years);
@@ -151,7 +150,7 @@ async function getSeasonInfoByYear(title, year) {
 
     try {
         const url = `https://www.imdb.com/title/${title}/episodes/_ajax?year=${year}`;
-        let html = await Scraper.getHtmlFromUrl(url);
+        let html = await scraper.getHtmlFromUrl(url);
 
         const $ = ch.load(html);
 
@@ -199,5 +198,5 @@ async function getSeasonInfoByYear(title, year) {
 
 async function getSeasonInfoByNumber(title, season) {
     const url = `https://www.imdb.com/title/${title}/episodes/_ajax?season=${season}`;
-    let html = await Scraper.getHtmlFromUrl(url);
+    let html = await scraper.getHtmlFromUrl(url);
 }

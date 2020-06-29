@@ -2,17 +2,13 @@ const { LogLevels } = require("./log");
 const rp = require("request-promise");
 const ch = require("cheerio");
 
-var Scraper = (function () {
-    var privateLogger = (function () {
-        function LogMessage(message) {
-            console.log(message);
-        }
-        return { LogMessage };
-    })();
+var Scraper = function (logger) {
+    var privateLogger = undefined;
 
-    function setLogger(logger) {
-        privateLogger.LogMessage("Setting new loger", LogLevels.debug, "setLogger", "scraper.js");
+    if (typeof logger.LogMessage == "function") {
         privateLogger = logger;
+    } else {
+        throw new Error("No method 'LogMessage' found in the given logger object");
     }
 
     function getHtmlFromUrl(url) {
@@ -74,9 +70,8 @@ var Scraper = (function () {
 
     return {
         getHtmlFromUrl,
-        setLogger,
         getFilteredHtml,
     };
-})();
+};
 
 module.exports = Scraper;
