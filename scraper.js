@@ -12,15 +12,15 @@ var Scraper = function (logger) {
     }
 
     function getHtmlFromUrl(url) {
-        privateLogger.LogMessage("(1) HTML reading ...", LogLevels.info, "getHtmlFromUrl", "scraper.js");
+        privateLogger.LogMessage(`Reading HTML from url ${url} ...`, LogLevels.info, "getHtmlFromUrl", "scraper.js");
         return new Promise((result) => {
             rp(url)
                 .then(function (html) {
-                    privateLogger.LogMessage("(2) HTML read", LogLevels.info, "getHtmlFromUrl", "scraper.js");
+                    privateLogger.LogMessage("HTML successfully read " + url, LogLevels.info, "getHtmlFromUrl", "scraper.js");
                     result(html);
                 })
                 .catch(function (err) {
-                    privateLogger.LogMessage(err, LogLevels.error, "getHtmlFromUrl", "scraper.js");
+                    privateLogger.LogMessage("HTML read error: " + err.message, LogLevels.error, "getHtmlFromUrl", "scraper.js");
                 });
         });
     }
