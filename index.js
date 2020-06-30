@@ -29,94 +29,125 @@ var port = config.port;
 app.listen(port, () => logger.LogMessage(`Listening on port ${port}...`, LogLevels.info, "main", "index.js"));
 
 app.get("/titleList/:t", async (req, res) => {
-    logger.LogMessage(`new request titleList for title: ${req.params.t}`, LogLevels.info, "titleList", "index.js");
+    logger.LogMessage(`new request titleList for title: ${req.params.t}`, LogLevels.request, "titleList", "index.js");
 
-    if (req.params.t) {
-        var seriesResponse = [];
-        var titleToSearch = req.params.t.toLowerCase();
+    var response;
+    var statusCode = 400;
+    try {
+        if (req.params.t) {
+            var seriesResponse = [];
+            var titleToSearch = req.params.t.toLowerCase();
 
-        var url = `https://sg.media-imdb.com/suggests/${titleToSearch[0]}/${titleToSearch}.json`;
-        var callResp = await callHttpMethod(url);
+            var url = `https://sg.media-imdb.com/suggests/${titleToSearch[0]}/${titleToSearch}.json`;
+            var callResp = await callHttpMethod(url);
 
-        if (callResp.statusCode == 200) {
-            var respBody = callResp.body;
-            var replHead = "imdb$" + titleToSearch + "(";
-            respBody = respBody.replace(replHead, "");
-            respBody = respBody.substring(0, respBody.length - 1);
-            var respJson = JSON.parse(respBody);
-            if (respJson.hasOwnProperty("d")) {
-                var data = respJson.d;
-                data.forEach((el) => {
-                    if (el["q"] == "TV series") {
-                        var image = null;
-                        if (el["i"]) image = el["i"][0];
+            if (callResp.statusCode == 200) {
+                var respBody = callResp.body;
+                var replHead = "imdb$" + titleToSearch + "(";
+                respBody = respBody.replace(replHead, "");
+                respBody = respBody.substring(0, respBody.length - 1);
+                var respJson = JSON.parse(respBody);
+                if (respJson.hasOwnProperty("d")) {
+                    var data = respJson.d;
+                    data.forEach((el) => {
+                        if (el["q"] == "TV series") {
+                            var image = null;
+                            if (el["i"]) image = el["i"][0];
 
-                        var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
-                        seriesResponse.push(series);
-                    }
-                });
-                res.send(seriesResponse);
+                            var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
+                            seriesResponse.push(series);
+                        }
+                    });
+                    response = seriesResponse;
+                    statusCode = 200;
+                } else {
+                    throw new Error("no property d found in json");
+                }
             } else {
-                logger.LogMessage("no property d found in json", LogLevels.info, "titleList", "index.js");
-                res.send("no property d found in json");
+                throw new Error("generic error status code");
             }
         } else {
-            logger.LogMessage("generic error status code", LogLevels.info, "titleList", "index.js");
-            res.send("generic error status code", LogLevels.error, "titleList", "index.js");
+            throw new Error("Invalid field t (Title)");
         }
-    } else {
-        logger.LogMessage("Invalid field t (Title)", LogLevels.error, "titleList", "index.js");
-        res.send("Invalid field t (Title)");
+    } catch (err) {
+        response = err.message;
+        statusCode = 500;
+        logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "titleList", "index.js");
+    } finally {
+        res.status(statusCode).send(response);
     }
+
+    logger.LogMessage(`Responding to /titleList/${req.params.t} with status code ${statusCode}`, LogLevels.response, "titleList", "index.js");
 });
 
 app.get("/seriesInfo/:id", async (req, res) => {
-    logger.LogMessage(`new request seriesInfo! idImdb: ${req.params.id}`, LogLevels.info, "seriesInfo", "index.js");
+    logger.LogMessage(`new request seriesInfo! idImdb: ${req.params.id}`, LogLevels.request, "seriesInfo", "index.js");
+    var response;
+    var statusCode = 400;
+    try {
+        const url = `https://www.imdb.com/title/${req.params.id}`;
 
-    const url = `https://www.imdb.com/title/${req.params.id}`;
+        logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "seriesInfo", "index.js");
+        let html = await scraper.getHtmlFromUrl(url);
+        logger.LogMessage(`Html received from url ${url}`, LogLevels.info, "seriesInfo", "index.js");
 
-    logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "seriesInfo", "index.js");
-    let html = await scraper.getHtmlFromUrl(url);
-    logger.LogMessage("(3) Html received", LogLevels.info, "seriesInfo", "index.js");
+        var attrGenres = ".see-more.inline.canwrap";
+        var genres = await scraper.getFilteredHtml(html, attrGenres, true, "a", 1);
+        logger.LogMessage(`genres: [${genres}]`, LogLevels.info, "seriesInfo", "index.js");
 
-    var attrGenres = ".see-more.inline.canwrap";
-    var genres = await scraper.getFilteredHtml(html, attrGenres, true, "a", 1);
-    logger.LogMessage(`genres: [${genres}]`, LogLevels.info, "seriesInfo", "index.js");
+        var attrPlot = ".summary_text";
+        var plot = await scraper.getFilteredHtml(html, attrPlot, true, null, 0);
+        logger.LogMessage(`plot: [${plot}]`, LogLevels.info, "seriesInfo", "index.js");
 
-    var attrPlot = ".summary_text";
-    var plot = await scraper.getFilteredHtml(html, attrPlot, true, null, 0);
-    logger.LogMessage(`plot: [${plot}]`, LogLevels.info, "seriesInfo", "index.js");
+        var attrRate = "*[itemprop = 'ratingValue']";
+        var rate = await scraper.getFilteredHtml(html, attrRate, true, null, 0);
+        logger.LogMessage(`rate: [${rate}]"`, LogLevels.info, "seriesInfo", "index.js");
 
-    var attrRate = "*[itemprop = 'ratingValue']";
-    var rate = await scraper.getFilteredHtml(html, attrRate, true, null, 0);
-    logger.LogMessage(`rate: [${rate}]"`, LogLevels.info, "seriesInfo", "index.js");
+        var attrRateCount = "*[itemprop = 'ratingCount']";
+        var rateCount = await scraper.getFilteredHtml(html, attrRateCount, true, null, 0);
+        logger.LogMessage(`rateCount: [${rateCount}]`, LogLevels.info, "seriesInfo", "index.js");
 
-    var attrRateCount = "*[itemprop = 'ratingCount']";
-    var rateCount = await scraper.getFilteredHtml(html, attrRateCount, true, null, 0);
-    logger.LogMessage(`rateCount: [${rateCount}]`, LogLevels.info, "seriesInfo", "index.js");
+        response = new SeriesInfo(req.params.id, genres, plot[0], rate[0], rateCount[0]);
+        statusCode = 200;
+    } catch (err) {
+        response = err.message;
+        statusCode = 500;
+        logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "seriesInfo", "index.js");
+    } finally {
+        res.status(statusCode).send(response);
+    }
 
-    var seriesInfo = new SeriesInfo(req.params.id, genres, plot[0], rate[0], rateCount[0]);
-
-    res.send(seriesInfo);
+    logger.LogMessage(`Responding to /seriesInfo/${req.params.id} with status code ${statusCode}`, LogLevels.response, "seriesInfo", "index.js");
 });
 
 app.get("/episodesList/:id", async (req, res) => {
-    logger.LogMessage(`new request episodesList! idImdb: ${req.params.id}`, LogLevels.info, "episodesList", "index.js");
+    logger.LogMessage(`new request episodesList! idImdb: ${req.params.id}`, LogLevels.request, "episodesList", "index.js");
+    var response;
+    var statusCode = 400;
+    try {
+        var currentDate = new Date();
 
-    var d = new Date();
+        const url = `https://www.imdb.com/title/${req.params.id}/episodes/_ajax?year=${currentDate.getFullYear()}`;
+        logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "episodesList", "index.js");
 
-    const url = `https://www.imdb.com/title/${req.params.id}/episodes/_ajax?year=${d.getFullYear()}`;
-    logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "episodesList", "index.js");
+        let html = await scraper.getHtmlFromUrl(url);
+        logger.LogMessage(`Html received from url ${url}`, LogLevels.info, "episodesList", "index.js");
 
-    let html = await scraper.getHtmlFromUrl(url);
-    logger.LogMessage("(3) Html received", LogLevels.info, "episodesList", "index.js");
+        var attrFilterYear = "#byYear > option";
+        var years = await scraper.getFilteredHtml(html, attrFilterYear, false, null, 0);
 
-    var attrFilterYear = "#byYear > option";
-    var years = await scraper.getFilteredHtml(html, attrFilterYear, false, null, 0);
+        response = [];
+        response = await getEpisodesList(req.params.id, years);
+    } catch (err) {
+        response = err.message;
+        statusCode = 500;
+        logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "episodesList", "index.js");
+    } finally {
+        res.status(statusCode).send(response);
+    }
 
-    var listRes = [];
-    listRes = await getEpisodesList(req.params.id, years);
     res.send(listRes);
+    logger.LogMessage(`Responding to /episodesList/${req.params.id} with status code ${statusCode}`, LogLevels.response, "episodesList", "index.js");
 });
 
 // FUNCTIONS
