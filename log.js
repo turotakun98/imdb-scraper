@@ -53,8 +53,10 @@ var Log = (function () {
 var LogLevels = Object.freeze({
     debug: { value: 1, description: "DEBUG" },
     info: { value: 2, description: "INFO" },
-    warning: { value: 3, description: "WARNING" },
-    error: { value: 4, description: "ERROR" },
+    request: { value: 3, description: "REQUEST" },
+    response: { value: 3, description: "RESPONSE" },
+    warning: { value: 4, description: "WARNING" },
+    error: { value: 5, description: "ERROR" },
 });
 
 module.exports = { Log, LogLevels };
