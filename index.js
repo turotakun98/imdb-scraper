@@ -26,7 +26,7 @@ logger.LogMessage("Appplication start", LogLevels.info, "main", "index.js");
 app.use(express.json());
 app.use(cors());
 var port = config.port;
-app.listen(port, () => logger.LogMessage(`Listening on port ${port}...`, LogLevels.info, "main", "index.js"));
+app.listen(port, logger.LogMessage(`Listening on port ${port}...`, LogLevels.info, "main", "index.js"));
 
 app.get("/titleList/:t", async (req, res) => {
     logger.LogMessage(`new request titleList for title: ${req.params.t}`, LogLevels.request, "titleList", "index.js");
@@ -35,7 +35,6 @@ app.get("/titleList/:t", async (req, res) => {
     var statusCode = 400;
     try {
         if (req.params.t) {
-            var seriesResponse = [];
             var titleToSearch = req.params.t.toLowerCase();
 
             var url = `https://sg.media-imdb.com/suggests/${titleToSearch[0]}/${titleToSearch}.json`;
@@ -43,26 +42,8 @@ app.get("/titleList/:t", async (req, res) => {
 
             if (callResp.statusCode == 200) {
                 var respBody = callResp.body;
-                var replHead = "imdb$" + titleToSearch + "(";
-                respBody = respBody.replace(replHead, "");
-                respBody = respBody.substring(0, respBody.length - 1);
-                var respJson = JSON.parse(respBody);
-                if (respJson.hasOwnProperty("d")) {
-                    var data = respJson.d;
-                    data.forEach((el) => {
-                        if (el["q"] == "TV series") {
-                            var image = null;
-                            if (el["i"]) image = el["i"][0];
-
-                            var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
-                            seriesResponse.push(series);
-                        }
-                    });
-                    response = seriesResponse;
-                    statusCode = 200;
-                } else {
-                    throw new Error("no property d found in json");
-                }
+                response = parseSeriesFromJson(respBody, titleToSearch);
+                statusCode = 200;
             } else {
                 throw new Error("generic error status code");
             }
@@ -136,7 +117,6 @@ app.get("/episodesList/:id", async (req, res) => {
         var attrFilterYear = "#byYear > option";
         var years = await scraper.getFilteredHtml(html, attrFilterYear, false, null, 0);
 
-        response = [];
         response = await getEpisodesList(req.params.id, years);
     } catch (err) {
         response = err.message;
@@ -151,9 +131,33 @@ app.get("/episodesList/:id", async (req, res) => {
 });
 
 // FUNCTIONS
+
+function parseSeriesFromJson(json, titleToSearch) {
+    var seriesResponse = [];
+    var replHead = "imdb$" + titleToSearch + "(";
+    var respBody = json.replace(replHead, "");
+    respBody = respBody.substring(0, respBody.length - 1);
+    var respJson = JSON.parse(respBody);
+    if (respJson.hasOwnProperty("d")) {
+        var data = respJson.d;
+        data.forEach((el) => {
+            if (el["q"] == "TV series") {
+                var image = null;
+                if (el["i"]) image = el["i"][0];
+
+                var series = new TitleInfo(el["id"], el["l"], el["yr"], image);
+                seriesResponse.push(series);
+            }
+        });
+        return seriesResponse;
+    } else {
+        throw new Error("no property d found in json");
+    }
+}
+
 async function getEpisodesList(idImdb, years) {
     listRes = [];
-    const yearsMap = years.map((v) => getSeasonInfoByYear(idImdb, v));
+    const yearsMap = years.map((v) => getSeasonEpisodesByYear(idImdb, v));
 
     for await (const year of yearsMap) {
         listRes = year;
@@ -163,7 +167,7 @@ async function getEpisodesList(idImdb, years) {
 }
 
 async function callHttpMethod(url) {
-    return new Promise((result) => {
+    var prom = new Promise((result) => {
         logger.LogMessage("Requesting api", LogLevels.info, "callHttpMethod", "index.js");
         request.get(url, (error, res, body) => {
             if (error) {
@@ -174,9 +178,10 @@ async function callHttpMethod(url) {
             logger.LogMessage(`Api statusCode: ${res.statusCode}`, LogLevels.info, "callHttpMethod", "index.js");
         });
     });
+    return prom;
 }
 
-async function getSeasonInfoByYear(title, year) {
+async function getSeasonEpisodesByYear(title, year) {
     episodesList = [];
 
     try {
@@ -225,9 +230,4 @@ async function getSeasonInfoByYear(title, year) {
     }
 
     return episodesList;
-}
-
-async function getSeasonInfoByNumber(title, season) {
-    const url = `https://www.imdb.com/title/${title}/episodes/_ajax?season=${season}`;
-    let html = await scraper.getHtmlFromUrl(url);
 }
