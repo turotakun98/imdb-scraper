@@ -118,6 +118,7 @@ app.get("/episodesList/:id", async (req, res) => {
         var years = await scraper.getFilteredHtml(html, attrFilterYear, false, null, 0);
 
         response = await getEpisodesList(req.params.id, years);
+        statusCode = 200;
     } catch (err) {
         response = err.message;
         statusCode = 500;
@@ -171,7 +172,7 @@ async function callHttpMethod(url) {
         logger.LogMessage("Requesting api", LogLevels.info, "callHttpMethod", "index.js");
         request.get(url, (error, res, body) => {
             if (error) {
-                logger.LogMessage(error, LogLevels.error, "callHttpMethod", "index.js");
+                logger.LogMessage(error.message, LogLevels.error, "callHttpMethod", "index.js");
                 return;
             }
             result(res);
