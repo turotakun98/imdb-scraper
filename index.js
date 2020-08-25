@@ -124,11 +124,9 @@ app.get("/episodesList/:id", async (req, res) => {
         statusCode = 500;
         logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "episodesList", "index.js");
     } finally {
+        logger.LogMessage(`Responding to /episodesList/${req.params.id} with status code ${statusCode}`, LogLevels.response, "episodesList", "index.js");
         res.status(statusCode).send(response);
     }
-
-    res.send(listRes);
-    logger.LogMessage(`Responding to /episodesList/${req.params.id} with status code ${statusCode}`, LogLevels.response, "episodesList", "index.js");
 });
 
 // FUNCTIONS
