@@ -8,7 +8,7 @@ const SeriesInfo = require("./seriesInfo");
 const cors = require("cors");
 const express = require("express");
 const app = express();
-const config = require("./config");
+const config = require("./config/config");
 const { Log, LogLevels } = require("./log");
 const Scraper = require("./scraper");
 
