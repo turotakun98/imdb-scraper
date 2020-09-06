@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const info = require("../../models/info");
+const SeriesInfo = require("../../models/seriesInfo");
 const { Log, LogLevels } = require("../../loaders/log");
 const ScraperService = require("../../services/scraper");
 const route = Router();
@@ -35,7 +35,7 @@ function _default(app) {
             var rateCount = await ScraperServiceInstance.getFilteredHtml(html, attrRateCount, true, null, 0);
             Logger.LogMessage(`rateCount: [${rateCount}]`, LogLevels.info, "info", "routes/series.js");
 
-            response = new info(req.params.id, genres, plot[0], rate[0], rateCount[0]);
+            response = new SeriesInfo(req.params.id, genres, plot[0], rate[0], rateCount[0]);
             statusCode = 200;
         } catch (err) {
             response = err.message;

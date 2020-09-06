@@ -1,5 +1,4 @@
 const { Router } = require("express");
-const EpisodeInfo = require("../../models/episodeInfo");
 const { Log, LogLevels } = require("../../loaders/log");
 const ScraperService = require("../../services/scraper");
 const EpisodesService = require("../../services/episodes");
