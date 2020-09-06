@@ -44,8 +44,8 @@ var TitlesService = function () {
     }
 
     return {
-        parseSeriesFromJson: parseSeriesFromJson,
-        callHttpMethod: callHttpMethod,
+        parseSeriesFromJson,
+        callHttpMethod,
     };
 };
 

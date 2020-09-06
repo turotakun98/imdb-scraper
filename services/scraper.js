@@ -1,6 +1,7 @@
 const rp = require("request-promise");
 const ch = require("cheerio");
 const { Log, LogLevels } = require("../loaders/log");
+
 var Scraper = function () {
     const Logger = Log.createLogger();
 
