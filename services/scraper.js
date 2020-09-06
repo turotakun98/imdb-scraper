@@ -1,26 +1,20 @@
-const { LogLevels } = require("./log");
 const rp = require("request-promise");
 const ch = require("cheerio");
+const { Log, LogLevels } = require("../loaders/log");
 
-var Scraper = function (logger) {
-    var privateLogger = undefined;
-
-    if (typeof logger.LogMessage == "function") {
-        privateLogger = logger;
-    } else {
-        throw new Error("No method 'LogMessage' found in the given logger object");
-    }
+var Scraper = function () {
+    const Logger = Log.createLogger();
 
     function getHtmlFromUrl(url) {
-        privateLogger.LogMessage(`Reading HTML from url ${url} ...`, LogLevels.info, "getHtmlFromUrl", "scraper.js");
+        Logger.LogMessage(`Reading HTML from url ${url} ...`, LogLevels.info, "getHtmlFromUrl", "services/services/scraper.js");
         return new Promise((result) => {
             rp(url)
                 .then(function (html) {
-                    privateLogger.LogMessage("HTML successfully read " + url, LogLevels.info, "getHtmlFromUrl", "scraper.js");
+                    Logger.LogMessage("HTML successfully read " + url, LogLevels.info, "getHtmlFromUrl", "services/scraper.js");
                     result(html);
                 })
                 .catch(function (err) {
-                    privateLogger.LogMessage("HTML read error: " + err.message, LogLevels.error, "getHtmlFromUrl", "scraper.js");
+                    Logger.LogMessage("HTML read error: " + err.message, LogLevels.error, "getHtmlFromUrl", "services/scraper.js");
                 });
         });
     }
@@ -37,7 +31,7 @@ var Scraper = function (logger) {
             results = results.concat(childAttr);
         }
 
-        privateLogger.LogMessage(`Res: ${results}`, LogLevels.info, "getFilteredHtml", "scraper.js");
+        Logger.LogMessage(`Res: ${results}`, LogLevels.info, "getFilteredHtml", "services/scraper.js");
 
         return results;
     }
