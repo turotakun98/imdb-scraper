@@ -40,18 +40,18 @@ var EpisodesService = function () {
                 try {
                     var episode = new EpisodeInfo(title, link, imageLink, epNumber, year, rating, ratingCount);
                     episodesList.push(episode);
-                    Logger.LogMessage(episode.toString(), LogLevels.info, "getSeasonInfoByYear", "index.js");
+                    Logger.LogMessage(episode.toString(), LogLevels.info, "getSeasonInfoByYear", "services/episodes.js");
                 } catch (e) {
                     Logger.LogMessage(
                         `Error trying to save Episode (${title}, ${link}, ${epNumber}, ${year}, ${rating})`,
                         LogLevels.error,
                         "getSeasonInfoByYear",
-                        "index.js"
+                        "services/episodes.js"
                     );
                 }
             });
         } catch (e) {
-            Logger.LogMessage(`Error in function 'getSeasonInfoByYear': ${e}`, LogLevels.error, "getSeasonInfoByYear", "index.js");
+            Logger.LogMessage(`Error in function 'getSeasonInfoByYear': ${e}`, LogLevels.error, "getSeasonInfoByYear", "services/episodes.js");
         }
 
         return episodesList;

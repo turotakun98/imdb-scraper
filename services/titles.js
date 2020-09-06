@@ -30,14 +30,14 @@ var TitlesService = function () {
 
     async function callHttpMethod(url) {
         var prom = new Promise((result) => {
-            Logger.LogMessage("Requesting api", LogLevels.info, "callHttpMethod", "index.js");
+            Logger.LogMessage("Requesting api", LogLevels.info, "callHttpMethod", "services/titles.js");
             request.get(url, (error, res, body) => {
                 if (error) {
-                    Logger.LogMessage(error.message, LogLevels.error, "callHttpMethod", "index.js");
+                    Logger.LogMessage(error.message, LogLevels.error, "callHttpMethod", "services/titles.js");
                     return;
                 }
                 result(res);
-                Logger.LogMessage(`Api statusCode: ${res.statusCode}`, LogLevels.info, "callHttpMethod", "index.js");
+                Logger.LogMessage(`Api statusCode: ${res.statusCode}`, LogLevels.info, "callHttpMethod", "services/titles.js");
             });
         });
         return prom;

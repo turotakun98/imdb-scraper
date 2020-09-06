@@ -12,17 +12,17 @@ function _default(app) {
     const EpisodesServiceInstance = new EpisodesService();
 
     route.get("/list/:id", async (req, res) => {
-        Logger.LogMessage(`new request episodesList! idImdb: ${req.params.id}`, LogLevels.request, "episodesList", "index.js");
+        Logger.LogMessage(`new request /episodes/list! idImdb: ${req.params.id}`, LogLevels.request, "list", "routes/episodes.js");
         var response;
         var statusCode = 400;
         try {
             var currentDate = new Date();
 
             const url = `https://www.imdb.com/title/${req.params.id}/episodes/_ajax?year=${currentDate.getFullYear()}`;
-            Logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "episodesList", "index.js");
+            Logger.LogMessage(`Require HTML for the url: ${url}`, LogLevels.info, "list", "routes/episodes.js");
 
             let html = await ScraperServiceInstance.getHtmlFromUrl(url);
-            Logger.LogMessage(`Html received from url ${url}`, LogLevels.info, "episodesList", "index.js");
+            Logger.LogMessage(`Html received from url ${url}`, LogLevels.info, "list", "routes/episodes.js");
 
             var attrFilterYear = "#byYear > option";
             var years = await ScraperServiceInstance.getFilteredHtml(html, attrFilterYear, false, null, 0);
@@ -32,9 +32,9 @@ function _default(app) {
         } catch (err) {
             response = err.message;
             statusCode = 500;
-            Logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "episodesList", "index.js");
+            Logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "list", "routes/episodes.js");
         } finally {
-            Logger.LogMessage(`Responding to /episodesList/${req.params.id} with status code ${statusCode}`, LogLevels.response, "episodesList", "index.js");
+            Logger.LogMessage(`Responding to /episodes/list/${req.params.id} with status code ${statusCode}`, LogLevels.response, "list", "routes/episodes.js");
             res.status(statusCode).send(response);
         }
     });

@@ -11,7 +11,7 @@ async function _default({ expressApp: app }) {
     });
 
     await expressLoader({ expressApp: app });
-    Logger.LogMessage("Express loaded", LogLevels.info, "loaders", "index.js");
+    Logger.LogMessage("Express loaded", LogLevels.info, "default", "loaders/index.js");
 }
 
 module.exports = _default;

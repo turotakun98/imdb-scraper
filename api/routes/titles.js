@@ -9,7 +9,7 @@ function _default(app) {
     const TitlesServiceInstance = new TitlesService();
 
     route.get("/list/:t", async (req, res) => {
-        Logger.LogMessage(`new request titleList for title: ${req.params.t}`, LogLevels.request, "titleList", "index.js");
+        Logger.LogMessage(`new request /title/list for title: ${req.params.t}`, LogLevels.request, "list", "routes/titles.js");
         var response;
         var statusCode = 400;
         try {
@@ -32,12 +32,12 @@ function _default(app) {
         } catch (err) {
             response = err.message;
             statusCode = 500;
-            Logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "titleList", "index.js");
+            Logger.LogMessage(`Catched error ${err.message}`, LogLevels.error, "list", "routes/titles.js");
         } finally {
             res.status(statusCode).send(response);
         }
 
-        Logger.LogMessage(`Responding to /titleList/${req.params.t} with status code ${statusCode}`, LogLevels.response, "titleList", "index.js");
+        Logger.LogMessage(`Responding to /title/list/${req.params.t} with status code ${statusCode}`, LogLevels.response, "list", "routes/titles.js");
     });
 }
 
